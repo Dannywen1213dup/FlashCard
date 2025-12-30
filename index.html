@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Flashcard Pro - 智慧路径版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+        
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0a0a0a;
+            --primary: #fbbf24; /* 皇家金 */
+            --primary-glow: rgba(251, 191, 36, 0.3);
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border: #1a1a1a;
+        }
+
+        body.light-mode {
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --primary: #0f172a; 
+            --primary-glow: rgba(15, 23, 42, 0.1);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+        }
+
+        .bg-custom-card { background-color: var(--bg-card); }
+        .border-custom { border-color: var(--border); }
+        
+        .perspective-1000 { perspective: 1000px; }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            border-radius: 2rem;
+            border: 1px solid var(--border);
+        }
+        
+        body:not(.light-mode) .card-front, body:not(.light-mode) .card-back {
+            background: linear-gradient(145deg, #0f0f0f, #000000);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.8);
+        }
+        
+        body.light-mode .card-front, body.light-mode .card-back {
+            background: #ffffff;
+            box-shadow: 0 15px 40px -10px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-back { transform: rotateY(180deg); }
+
+        #map-container {
+            position: relative;
+            width: 100%;
+            height: 650px;
+            background-color: var(--bg-card);
+            background-image: radial-gradient(circle at 1px 1px, var(--border) 1.5px, transparent 0);
+            background-size: 32px 32px;
+            cursor: grab;
+            overflow: hidden;
+            border-bottom-left-radius: 2rem;
+            border-bottom-right-radius: 2rem;
+        }
+        #map-container:active { cursor: grabbing; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(15px);
+        }
+
+        .gold-glow { box-shadow: 0 0 20px var(--primary-glow); }
+        .gold-text { color: var(--primary); }
+        .gold-bg { background-color: var(--primary); }
+        .gold-border { border-color: var(--primary); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-custom-card border-b border-custom px-8 py-5 flex justify-between items-center sticky top-0 z-50">
+        <div class="flex items-center gap-4">
+            <div class="gold-bg p-2.5 rounded-2xl shadow-lg">
+                <i class="fas fa-route text-black text-xl"></i>
+            </div>
+            <span class="text-xl font-black tracking-tighter uppercase italic">LEARNING <span class="gold-text">PATH</span></span>
+        </div>
+        <div class="flex items-center gap-5">
+            <div id="memory-stats" class="hidden md:flex items-center gap-3 px-5 py-2 rounded-2xl border border-custom bg-white/5 text-xs font-black uppercase tracking-widest">
+                <span class="w-2 h-2 rounded-full gold-bg animate-pulse"></span>
+                Roadmaps: <span id="cached-count" class="gold-text ml-1">0</span>
+            </div>
+            <button id="open-settings" class="w-11 h-11 rounded-2xl bg-custom-card border border-custom hover:border-amber-400 flex items-center justify-center transition-all">
+                <i class="fas fa-sliders-h"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] modal-overlay hidden flex items-center justify-center p-6">
+        <div class="bg-custom-card rounded-[2.5rem] w-full max-w-md p-10 shadow-3xl border border-custom">
+            <h3 class="text-3xl font-black mb-2 tracking-tighter uppercase">控制台</h3>
+            <p class="text-custom-muted text-sm mb-10 italic">配置您的学习引擎与视觉偏好。</p>
+            
+            <div class="space-y-8">
+                <div>
+                    <label class="block text-[10px] font-black uppercase gold-text mb-3 tracking-widest">Google API Key</label>
+                    <input type="password" id="api-key-input" placeholder="输入 API 密钥..." class="w-full px-5 py-4 rounded-2xl bg-white/5 border-2 border-custom focus:border-amber-400 outline-none transition-all text-sm font-mono">
+                </div>
+                
+                <div class="flex items-center justify-between p-5 bg-white/5 rounded-3xl border border-custom">
+                    <div>
+                        <p class="font-black text-sm uppercase">主题风格</p>
+                        <p class="text-[10px] text-custom-muted uppercase tracking-widest mt-1">Light / Dark</p>
+                    </div>
+                    <button id="theme-toggle" class="w-16 h-9 rounded-full bg-custom-card border border-custom relative transition-all">
+                        <div id="theme-indicator" class="w-7 h-7 gold-bg rounded-full absolute top-1 left-1 shadow-lg transition-all"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex gap-4 mt-12">
+                <button id="save-key-btn" class="flex-grow gold-bg hover:opacity-90 text-black font-black py-5 rounded-3xl transition-all uppercase tracking-tighter">保存并更新</button>
+                <button id="close-settings" class="px-8 border border-custom hover:bg-white/5 font-black py-5 rounded-3xl transition-all uppercase text-[10px] tracking-widest">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-6 py-12 md:py-20">
+        <section class="mb-20 text-center">
+            <h1 class="text-5xl md:text-8xl font-black mb-8 tracking-tighter uppercase leading-[0.85]">
+                规划你的<br/><span class="gold-text">学习路径</span>
+            </h1>
+            <p class="text-custom-muted mb-12 max-w-xl mx-auto text-lg font-medium">
+                输入你想学习的主题，AI 将为你规划从入门到精通的思维导图，并生成对应的记忆卡片。
+            </p>
+            <div class="flex flex-col md:flex-row gap-4 max-w-4xl mx-auto p-3 bg-custom-card rounded-[2.5rem] border border-custom shadow-3xl">
+                <div class="relative flex-grow flex items-center px-4">
+                    <i class="fas fa-lightbulb gold-text mr-4"></i>
+                    <input type="text" id="topic-input" placeholder="你想学习什么？例如：量子力学、iOS 开发..." 
+                           class="w-full bg-transparent outline-none text-xl font-bold placeholder:text-custom-muted/40">
+                </div>
+                <div class="flex gap-3">
+                    <button id="generate-btn" class="gold-bg hover:opacity-90 text-black font-black py-5 px-12 rounded-[2rem] transition-all uppercase tracking-tighter text-sm">
+                        规划路径
+                    </button>
+                </div>
+            </div>
+            <p id="no-key-warning" class="mt-6 text-amber-500 text-sm font-bold hidden animate-pulse">
+                <i class="fas fa-lock mr-2"></i> 请先配置 API Key 以激活 AI 引擎
+            </p>
+        </section>
+
+        <!-- Loader -->
+        <div id="loader" class="hidden py-32 text-center">
+            <div class="inline-block relative w-24 h-24 mb-6">
+                <div class="absolute inset-0 border-4 border-amber-400/10 rounded-full"></div>
+                <div class="absolute inset-0 border-4 gold-bg rounded-full border-t-transparent animate-spin"></div>
+            </div>
+            <p class="gold-text font-black uppercase tracking-widest text-xs">AI 正在规划路线图...</p>
+        </div>
+
+        <div id="study-section" class="hidden">
+            <div class="flex justify-between items-end mb-10">
+                <div>
+                    <p class="gold-text text-[10px] font-black uppercase tracking-widest mb-2">Detailed Cards</p>
+                    <h2 id="current-topic-display" class="text-4xl font-black uppercase tracking-tighter italic">记忆强化</h2>
+                </div>
+                <div class="flex gap-2 bg-white/5 p-1.5 rounded-2xl border border-custom">
+                    <button id="normal-mode-btn" class="px-6 py-3 rounded-xl gold-bg text-black font-black transition-all text-[10px] uppercase">术语模式</button>
+                    <button id="reverse-mode-btn" class="px-6 py-3 rounded-xl text-custom-muted font-black transition-all text-[10px] uppercase hover:text-white">释义模式</button>
+                </div>
+            </div>
+
+            <!-- Card Viewer -->
+            <div class="relative max-w-4xl mx-auto mb-24">
+                <div id="main-card-container" class="perspective-1000 h-[450px] cursor-pointer group">
+                    <div id="main-card" class="card-inner">
+                        <div class="card-front flex-col text-center">
+                            <h3 id="front-text" class="text-3xl md:text-5xl font-black px-12 leading-tight tracking-tighter">...</h3>
+                            <div class="mt-20 gold-text/20 group-hover:gold-text transition-colors">
+                                <i class="fas fa-sync-alt fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="card-back flex-col text-center">
+                            <div class="custom-scrollbar overflow-y-auto max-h-[85%] px-12">
+                                <p id="back-text" class="text-xl text-custom-main leading-relaxed font-semibold italic"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center items-center gap-12 mt-12">
+                    <button id="prev-btn" class="w-16 h-16 rounded-full border border-custom flex items-center justify-center hover:border-amber-400 text-custom-muted hover:gold-text transition-all bg-custom-card">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="text-custom-muted font-black text-sm uppercase tracking-widest">
+                        Card <span id="card-index-display" class="gold-text">1</span> / <span id="card-total-display">0</span>
+                    </div>
+                    <button id="next-btn" class="w-16 h-16 rounded-full border border-custom flex items-center justify-center hover:border-amber-400 text-custom-muted hover:gold-text transition-all bg-custom-card">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MIND MAP (ROADMAP VIEW) -->
+            <section class="my-32 bg-custom-card rounded-[3rem] border border-custom shadow-3xl overflow-hidden">
+                <div class="p-10 border-b border-custom flex items-center justify-between bg-black/40">
+                    <div class="flex items-center gap-4">
+                        <div class="w-3 h-3 gold-bg rounded-full shadow-[0_0_10px_#fbbf24]"></div>
+                        <h3 class="text-2xl font-black uppercase tracking-tighter">增量式学习策略图谱</h3>
+                    </div>
+                    <button id="clear-cache-btn" class="text-[10px] font-black uppercase tracking-widest text-custom-muted hover:text-rose-500 transition-colors flex items-center gap-2">
+                        <i class="fas fa-trash"></i> 重置图谱
+                    </button>
+                </div>
+                
+                <div id="map-container">
+                    <canvas id="mind-map-canvas"></canvas>
+                    <div id="canvas-controls">
+                        <button onclick="zoomCanvas(1.2)" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-plus"></i></button>
+                        <button onclick="zoomCanvas(0.8)" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-minus"></i></button>
+                        <button onclick="resetCanvasView()" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Card List -->
+            <div class="mt-32">
+                <h3 class="text-3xl font-black uppercase tracking-tighter mb-12">知识总览</h3>
+                <div id="card-list" class="grid gap-6"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="error-toast" class="fixed bottom-12 right-12 transform translate-y-40 opacity-0 transition-all duration-500 z-[200]">
+        <div class="bg-amber-400 text-black px-10 py-5 rounded-[2rem] shadow-3xl flex items-center gap-5 font-black uppercase">
+            <i class="fas fa-bolt"></i>
+            <span id="error-message"></span>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let userApiKey = localStorage.getItem('gemini_flashcard_key') || "";
+        let isDarkMode = localStorage.getItem('theme_mode') !== 'light';
+        const modelName = "gemini-2.5-flash-preview-09-2025";
+
+        let roadmapData = {}; // Format: { topicName: { steps: [] } }
+        let allFlashcards = []; 
+        let currentBatch = [];
+        let currentIndex = 0;
+        let isReverseMode = false;
+        let masterNodeLabel = "我的学习宫殿";
+
+        const canvas = document.getElementById('mind-map-canvas');
+        const ctx = canvas.getContext('2d');
+        const mapContainer = document.getElementById('map-container');
+        let camera = { x: 0, y: 0, zoom: 0.8 };
+        let isDragging = false;
+        let lastMousePos = { x: 0, y: 0 };
+
+        // --- Safe DOM Access Helper ---
+        function safeCall(id, action) {
+            const el = document.getElementById(id);
+            if (el) action(el);
+        }
+
+        // --- Theme Engine ---
+        function applyTheme() {
+            if (isDarkMode) {
+                document.body.classList.remove('light-mode');
+                safeCall('theme-indicator', el => el.style.transform = 'translateX(0)');
+            } else {
+                document.body.classList.add('light-mode');
+                safeCall('theme-indicator', el => el.style.transform = 'translateX(28px)');
+            }
+            localStorage.setItem('theme_mode', isDarkMode ? 'dark' : 'light');
+            if (Object.keys(roadmapData).length > 0) drawMap();
+        }
+
+        document.getElementById('theme-toggle')?.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            applyTheme();
+        });
+
+        window.addEventListener('load', () => {
+            applyTheme();
+            if (!userApiKey) {
+                safeCall('no-key-warning', el => el.classList.remove('hidden'));
+                safeCall('settings-modal', el => el.classList.remove('hidden'));
+            } else {
+                safeCall('api-key-input', el => el.value = userApiKey);
+            }
+        });
+
+        document.getElementById('open-settings')?.addEventListener('click', () => safeCall('settings-modal', el => el.classList.remove('hidden')));
+        document.getElementById('close-settings')?.addEventListener('click', () => safeCall('settings-modal', el => el.classList.add('hidden')));
+        document.getElementById('save-key-btn')?.addEventListener('click', () => {
+            const val = document.getElementById('api-key-input')?.value.trim();
+            if (val) {
+                userApiKey = val;
+                localStorage.setItem('gemini_flashcard_key', val);
+                safeCall('no-key-warning', el => el.classList.add('hidden'));
+                safeCall('settings-modal', el => el.classList.add('hidden'));
+                showToast("学习引擎已激活");
+            }
+        });
+
+        // --- AI Business Logic ---
+
+        async function generateFlashcards() {
+            if (!userApiKey) { safeCall('settings-modal', el => el.classList.remove('hidden')); return; }
+            const topic = document.getElementById('topic-input')?.value.trim();
+            if (!topic) return;
+
+            safeCall('loader', el => el.classList.remove('hidden'));
+            const genBtn = document.getElementById('generate-btn');
+            if (genBtn) genBtn.disabled = true;
+
+            const systemPrompt = `你是一个终身学习规划专家。
+            用户想学习主题: "${topic}"。
+            任务：
+            1. 规划学习该主题的 Roadmap（路径图）。包含 4-6 个阶段（如：预备知识、核心概念、进阶挑战等）。
+            2. 每个阶段需要一个简洁的标签（如：阶段1：基础理论）。
+            3. 针对该主题生成 8-10 张关键记忆卡片（术语与详解）。
+            
+            输出必须为纯 JSON，严禁 Markdown。
+            格式：
+            {
+              "roadmap": [{"step": "阶段1标签", "description": "简短建议"}],
+              "cards": [{"front": "术语", "back": "详解"}]
+            }`;
+
+            try {
+                const response = await callGeminiAPI(topic, systemPrompt);
+                const sanitized = response.replace(/```json/g, '').replace(/```/g, '').trim();
+                const data = JSON.parse(sanitized);
+                
+                // 增量更新 Roadmap
+                roadmapData[topic] = data.roadmap;
+                
+                // 更新卡片数据
+                currentBatch = data.cards;
+                allFlashcards = [...allFlashcards, ...data.cards.map(c => ({...c, topic}))];
+                currentIndex = allFlashcards.length - currentBatch.length;
+                
+                updateDisplay();
+                renderCardList();
+                
+                safeCall('loader', el => el.classList.add('hidden'));
+                safeCall('study-section', el => el.classList.remove('hidden'));
+                safeCall('memory-stats', el => el.classList.remove('hidden'));
+                safeCall('cached-count', el => el.innerText = Object.keys(roadmapData).length);
+
+                requestAnimationFrame(() => {
+                    initCanvas();
+                    if (Object.keys(roadmapData).length === 1) resetCanvasView();
+                    drawMap();
+                });
+                
+                safeCall('topic-input', el => el.value = "");
+            } catch (err) {
+                console.error(err);
+                showError("规划失败：请检查网络或 API Key");
+            } finally {
+                safeCall('loader', el => el.classList.add('hidden'));
+                if (genBtn) genBtn.disabled = false;
+            }
+        }
+
+        async function callGeminiAPI(prompt, systemInstruction) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${userApiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: { responseMimeType: "application/json" }
+            };
+            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error('API Error');
+            const result = await res.json();
+            return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        }
+
+        // --- Canvas Roadmap Engine ---
+
+        function initCanvas() {
+            if (!mapContainer || !canvas) return;
+            canvas.width = mapContainer.clientWidth;
+            canvas.height = mapContainer.clientHeight;
+        }
+
+        function drawArrowLine(x1, y1, x2, y2, color, isMain = false) {
+            const headLength = isMain ? 15 : 10;
+            const angle = Math.atan2(y2 - y1, x2 - x1);
+            const offset = isMain ? 35 : 25;
+            
+            const endX = x2 - Math.cos(angle) * offset;
+            const endY = y2 - Math.sin(angle) * offset;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = isMain ? 3 : 1.5;
+            ctx.stroke();
+
+            // 绘制实心箭头
+            ctx.save();
+            ctx.translate(endX, endY);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-headLength, -headLength / 1.5);
+            ctx.lineTo(-headLength, headLength / 1.5);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawMap() {
+            if (!ctx || !canvas.width) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2 + camera.x, canvas.height / 2 + camera.y);
+            ctx.scale(camera.zoom, camera.zoom);
+
+            const topicKeys = Object.keys(roadmapData);
+            const topicAngleStep = (Math.PI * 2) / Math.max(1, topicKeys.length);
+
+            const primaryColor = isDarkMode ? "#fbbf24" : "#0f172a";
+            const secondaryColor = isDarkMode ? "rgba(251, 191, 36, 0.4)" : "rgba(0, 0, 0, 0.2)";
+
+            // 1. 绘制连线与箭头 (全层级)
+            topicKeys.forEach((topic, i) => {
+                const topicAngle = i * topicAngleStep;
+                const topicDist = 240;
+                const tx = Math.cos(topicAngle) * topicDist;
+                const ty = Math.sin(topicAngle) * topicDist;
+
+                // 中心 -> 主题
+                drawArrowLine(0, 0, tx, ty, primaryColor, true);
+
+                const steps = roadmapData[topic];
+                steps.forEach((s, j) => {
+                    const arcWidth = 0.8;
+                    const stepAngle = topicAngle - (arcWidth/2) + (steps.length > 1 ? (arcWidth * j / (steps.length - 1)) : 0);
+                    const stepDist = 450;
+                    const sx = Math.cos(stepAngle) * stepDist;
+                    const sy = Math.sin(stepAngle) * stepDist;
+
+                    // 主题 -> 学习步骤
+                    drawArrowLine(tx, ty, sx, sy, secondaryColor, false);
+                });
+            });
+
+            // 2. 绘制节点
+            drawStyledNode(masterNodeLabel.toUpperCase(), 0, 0, { bg: primaryColor, text: isDarkMode ? "#000" : "#fff", bold: true, padding: 24, radius: 15 });
+
+            topicKeys.forEach((topic, i) => {
+                const topicAngle = i * topicAngleStep;
+                const topicDist = 240;
+                const tx = Math.cos(topicAngle) * topicDist;
+                const ty = Math.sin(topicAngle) * topicDist;
+
+                drawStyledNode(topic, tx, ty, { bg: isDarkMode ? "#fff" : "#1e293b", text: isDarkMode ? "#000" : "#fff", radius: 12, padding: 18 });
+
+                const steps = roadmapData[topic];
+                steps.forEach((s, j) => {
+                    const arcWidth = 0.8;
+                    const stepAngle = topicAngle - (arcWidth/2) + (steps.length > 1 ? (arcWidth * j / (steps.length - 1)) : 0);
+                    const stepDist = 450;
+                    const sx = Math.cos(stepAngle) * stepDist;
+                    const sy = Math.sin(stepAngle) * stepDist;
+
+                    drawStyledNode(s.step, sx, sy, {
+                        bg: isDarkMode ? "#050505" : "#fff", 
+                        text: isDarkMode ? "#fff" : "#1e293b", 
+                        border: isDarkMode ? "#fbbf24" : "#e2e8f0", 
+                        fontSize: 10,
+                        radius: 8
+                    });
+                });
+            });
+
+            ctx.restore();
+        }
+
+        function drawStyledNode(text, x, y, style) {
+            ctx.font = `${style.bold ? '900' : '700'} ${style.fontSize || 14}px Inter`;
+            const m = ctx.measureText(text);
+            const p = style.padding || 16;
+            const w = m.width + p * 2;
+            const h = (style.fontSize || 14) + p * 1.5;
+
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(x - w / 2, y - h / 2, w, h, style.radius || 10);
+            else ctx.rect(x - w / 2, y - h / 2, w, h);
+            
+            ctx.fillStyle = style.bg;
+            ctx.fill();
+            if (style.border) {
+                ctx.strokeStyle = style.border;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            ctx.fillStyle = style.text;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(text, x, y + 2);
+        }
+
+        // --- Canvas Interactions ---
+        mapContainer?.addEventListener('mousedown', e => { isDragging = true; lastMousePos = { x: e.clientX, y: e.clientY }; });
+        window.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            camera.x += (e.clientX - lastMousePos.x); camera.y += (e.clientY - lastMousePos.y);
+            lastMousePos = { x: e.clientX, y: e.clientY }; drawMap();
+        });
+        window.addEventListener('mouseup', () => isDragging = false);
+        mapContainer?.addEventListener('wheel', e => {
+            e.preventDefault(); camera.zoom -= e.deltaY * 0.001;
+            camera.zoom = Math.max(0.1, Math.min(4, camera.zoom)); drawMap();
+        }, { passive: false });
+
+        function zoomCanvas(f) { camera.zoom *= f; drawMap(); }
+        function resetCanvasView() { camera = { x: 0, y: 0, zoom: 0.85 }; drawMap(); }
+
+        // --- UI Updates ---
+
+        function updateDisplay() {
+            if (allFlashcards.length === 0) return;
+            const current = allFlashcards[currentIndex];
+            safeCall('front-text', el => el.innerText = isReverseMode ? current.back : current.front);
+            safeCall('back-text', el => el.innerText = isReverseMode ? current.front : current.back);
+            safeCall('card-index-display', el => el.innerText = currentIndex + 1);
+            safeCall('card-total-display', el => el.innerText = allFlashcards.length);
+            
+            safeCall('main-card', el => el.parentElement?.classList.remove('card-flipped'));
+        }
+
+        function renderCardList() {
+            const list = document.getElementById('card-list');
+            if (!list) return;
+            list.innerHTML = allFlashcards.map((card, idx) => `
+                <div class="bg-custom-card p-8 rounded-[2.5rem] border border-custom flex items-center gap-8 shadow-xl group">
+                    <div class="flex-grow">
+                        <p class="text-[10px] gold-text font-black uppercase tracking-widest mb-2">${card.topic}</p>
+                        <p class="text-xl font-black mb-1 group-hover:gold-text transition-colors uppercase">${card.front}</p>
+                        <p class="text-custom-muted text-sm leading-relaxed">${card.back}</p>
+                    </div>
+                </div>
+            `).reverse().join('');
+        }
+
+        document.getElementById('generate-btn')?.addEventListener('click', generateFlashcards);
+        document.getElementById('main-card-container')?.addEventListener('click', () => {
+            safeCall('main-card', el => el.parentElement?.classList.toggle('card-flipped'));
+        });
+        document.getElementById('next-btn')?.addEventListener('click', () => { if (currentIndex < allFlashcards.length - 1) { currentIndex++; updateDisplay(); } });
+        document.getElementById('prev-btn')?.addEventListener('click', () => { if (currentIndex > 0) { currentIndex--; updateDisplay(); } });
+
+        document.getElementById('normal-mode-btn')?.addEventListener('click', function() { 
+            isReverseMode = false; updateDisplay(); 
+            this.className = "px-6 py-3 rounded-xl gold-bg text-black font-black transition-all text-[10px] uppercase";
+            safeCall('reverse-mode-btn', el => el.className = "px-6 py-3 rounded-xl text-custom-muted font-black transition-all text-[10px] uppercase hover:text-white");
+        });
+        document.getElementById('reverse-mode-btn')?.addEventListener('click', function() { 
+            isReverseMode = true; updateDisplay(); 
+            this.className = "px-6 py-3 rounded-xl gold-bg text-black font-black transition-all text-[10px] uppercase";
+            safeCall('normal-mode-btn', el => el.className = "px-6 py-3 rounded-xl text-custom-muted font-black transition-all text-[10px] uppercase hover:text-white");
+        });
+
+        document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
+            if (confirm("确定要重置所有本地规划的路径吗？")) {
+                roadmapData = {};
+                allFlashcards = [];
+                safeCall('study-section', el => el.classList.add('hidden'));
+                safeCall('memory-stats', el => el.classList.add('hidden'));
+            }
+        });
+
+        function showError(m) {
+            const t = document.getElementById('error-toast');
+            if (!t) return;
+            safeCall('error-message', el => el.innerText = m);
+            t.classList.remove('translate-y-40', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-40', 'opacity-0'), 3000);
+        }
+
+        function showToast(m) {
+            const t = document.getElementById('error-toast');
+            if (!t) return;
+            safeCall('error-message', el => el.innerText = m);
+            t.classList.remove('translate-y-40', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-40', 'opacity-0'), 3000);
+        }
+
+        window.addEventListener('resize', () => { if (!document.getElementById('study-section')?.classList.contains('hidden')) { initCanvas(); drawMap(); } });
+    </script>
+</body>
+</html>
