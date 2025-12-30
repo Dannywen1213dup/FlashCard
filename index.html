@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Flashcard Pro - 智慧路径版</title>
+    <title>AI Flashcard Pro - 多级智慧路径版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -12,7 +12,7 @@
         :root {
             --bg-main: #000000;
             --bg-card: #0a0a0a;
-            --primary: #fbbf24; /* 皇家金 */
+            --primary: #fbbf24; /* Royal Gold */
             --primary-glow: rgba(251, 191, 36, 0.3);
             --text-main: #ffffff;
             --text-muted: #888888;
@@ -77,7 +77,7 @@
         #map-container {
             position: relative;
             width: 100%;
-            height: 650px;
+            height: 700px;
             background-color: var(--bg-card);
             background-image: radial-gradient(circle at 1px 1px, var(--border) 1.5px, transparent 0);
             background-size: 32px 32px;
@@ -108,14 +108,14 @@
     <nav class="bg-custom-card border-b border-custom px-8 py-5 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center gap-4">
             <div class="gold-bg p-2.5 rounded-2xl shadow-lg">
-                <i class="fas fa-route text-black text-xl"></i>
+                <i class="fas fa-network-wired text-black text-xl"></i>
             </div>
-            <span class="text-xl font-black tracking-tighter uppercase italic">LEARNING <span class="gold-text">PATH</span></span>
+            <span class="text-xl font-black tracking-tighter uppercase italic">DEEP <span class="gold-text">PLANNER</span></span>
         </div>
         <div class="flex items-center gap-5">
             <div id="memory-stats" class="hidden md:flex items-center gap-3 px-5 py-2 rounded-2xl border border-custom bg-white/5 text-xs font-black uppercase tracking-widest">
                 <span class="w-2 h-2 rounded-full gold-bg animate-pulse"></span>
-                Roadmaps: <span id="cached-count" class="gold-text ml-1">0</span>
+                Strategies: <span id="cached-count" class="gold-text ml-1">0</span>
             </div>
             <button id="open-settings" class="w-11 h-11 rounded-2xl bg-custom-card border border-custom hover:border-amber-400 flex items-center justify-center transition-all">
                 <i class="fas fa-sliders-h"></i>
@@ -156,20 +156,20 @@
     <main class="max-w-5xl mx-auto px-6 py-12 md:py-20">
         <section class="mb-20 text-center">
             <h1 class="text-5xl md:text-8xl font-black mb-8 tracking-tighter uppercase leading-[0.85]">
-                规划你的<br/><span class="gold-text">学习路径</span>
+                规划多层级<br/><span class="gold-text">学习路径</span>
             </h1>
             <p class="text-custom-muted mb-12 max-w-xl mx-auto text-lg font-medium">
-                输入你想学习的主题，AI 将为你规划从入门到精通的思维导图，并生成对应的记忆卡片。
+                输入您的学习目标，AI 将为您拆解为多维度的深度执行方案，并动态扩展您的全局知识图谱。
             </p>
             <div class="flex flex-col md:flex-row gap-4 max-w-4xl mx-auto p-3 bg-custom-card rounded-[2.5rem] border border-custom shadow-3xl">
                 <div class="relative flex-grow flex items-center px-4">
-                    <i class="fas fa-lightbulb gold-text mr-4"></i>
-                    <input type="text" id="topic-input" placeholder="你想学习什么？例如：量子力学、iOS 开发..." 
+                    <i class="fas fa-brain gold-text mr-4"></i>
+                    <input type="text" id="topic-input" placeholder="例如：掌握 React 核心原理、学习法语入门..." 
                            class="w-full bg-transparent outline-none text-xl font-bold placeholder:text-custom-muted/40">
                 </div>
                 <div class="flex gap-3">
                     <button id="generate-btn" class="gold-bg hover:opacity-90 text-black font-black py-5 px-12 rounded-[2rem] transition-all uppercase tracking-tighter text-sm">
-                        规划路径
+                        规划深度路径
                     </button>
                 </div>
             </div>
@@ -184,14 +184,36 @@
                 <div class="absolute inset-0 border-4 border-amber-400/10 rounded-full"></div>
                 <div class="absolute inset-0 border-4 gold-bg rounded-full border-t-transparent animate-spin"></div>
             </div>
-            <p class="gold-text font-black uppercase tracking-widest text-xs">AI 正在规划路线图...</p>
+            <p class="gold-text font-black uppercase tracking-widest text-xs">AI 正在进行多级逻辑拆解...</p>
         </div>
 
         <div id="study-section" class="hidden">
+            <!-- MIND MAP (ROADMAP VIEW) -->
+            <section class="mb-24 bg-custom-card rounded-[3rem] border border-custom shadow-3xl overflow-hidden">
+                <div class="p-10 border-b border-custom flex items-center justify-between bg-black/40">
+                    <div class="flex items-center gap-4">
+                        <div class="w-3 h-3 gold-bg rounded-full shadow-[0_0_10px_#fbbf24]"></div>
+                        <h3 class="text-2xl font-black uppercase tracking-tighter">多层级增量学习图谱</h3>
+                    </div>
+                    <button id="clear-cache-btn" class="text-[10px] font-black uppercase tracking-widest text-custom-muted hover:text-rose-500 transition-colors flex items-center gap-2">
+                        <i class="fas fa-trash"></i> 清空图谱
+                    </button>
+                </div>
+                
+                <div id="map-container">
+                    <canvas id="mind-map-canvas"></canvas>
+                    <div id="canvas-controls">
+                        <button onclick="zoomCanvas(1.2)" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-plus"></i></button>
+                        <button onclick="zoomCanvas(0.8)" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-minus"></i></button>
+                        <button onclick="resetCanvasView()" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-expand"></i></button>
+                    </div>
+                </div>
+            </section>
+
             <div class="flex justify-between items-end mb-10">
                 <div>
-                    <p class="gold-text text-[10px] font-black uppercase tracking-widest mb-2">Detailed Cards</p>
-                    <h2 id="current-topic-display" class="text-4xl font-black uppercase tracking-tighter italic">记忆强化</h2>
+                    <p class="gold-text text-[10px] font-black uppercase tracking-widest mb-2">Memory Boost</p>
+                    <h2 id="current-topic-display" class="text-4xl font-black uppercase tracking-tighter italic">核心卡片强化</h2>
                 </div>
                 <div class="flex gap-2 bg-white/5 p-1.5 rounded-2xl border border-custom">
                     <button id="normal-mode-btn" class="px-6 py-3 rounded-xl gold-bg text-black font-black transition-all text-[10px] uppercase">术语模式</button>
@@ -230,31 +252,9 @@
                 </div>
             </div>
 
-            <!-- MIND MAP (ROADMAP VIEW) -->
-            <section class="my-32 bg-custom-card rounded-[3rem] border border-custom shadow-3xl overflow-hidden">
-                <div class="p-10 border-b border-custom flex items-center justify-between bg-black/40">
-                    <div class="flex items-center gap-4">
-                        <div class="w-3 h-3 gold-bg rounded-full shadow-[0_0_10px_#fbbf24]"></div>
-                        <h3 class="text-2xl font-black uppercase tracking-tighter">增量式学习策略图谱</h3>
-                    </div>
-                    <button id="clear-cache-btn" class="text-[10px] font-black uppercase tracking-widest text-custom-muted hover:text-rose-500 transition-colors flex items-center gap-2">
-                        <i class="fas fa-trash"></i> 重置图谱
-                    </button>
-                </div>
-                
-                <div id="map-container">
-                    <canvas id="mind-map-canvas"></canvas>
-                    <div id="canvas-controls">
-                        <button onclick="zoomCanvas(1.2)" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-plus"></i></button>
-                        <button onclick="zoomCanvas(0.8)" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-minus"></i></button>
-                        <button onclick="resetCanvasView()" class="w-12 h-12 bg-custom-card border border-custom rounded-2xl flex items-center justify-center hover:border-amber-400 transition-all"><i class="fas fa-expand"></i></button>
-                    </div>
-                </div>
-            </section>
-
             <!-- Card List -->
             <div class="mt-32">
-                <h3 class="text-3xl font-black uppercase tracking-tighter mb-12">知识总览</h3>
+                <h3 class="text-3xl font-black uppercase tracking-tighter mb-12">执行要点</h3>
                 <div id="card-list" class="grid gap-6"></div>
             </div>
         </div>
@@ -273,27 +273,24 @@
         let isDarkMode = localStorage.getItem('theme_mode') !== 'light';
         const modelName = "gemini-2.5-flash-preview-09-2025";
 
-        let roadmapData = {}; // Format: { topicName: { steps: [] } }
+        let roadmapData = {}; 
         let allFlashcards = []; 
-        let currentBatch = [];
         let currentIndex = 0;
         let isReverseMode = false;
-        let masterNodeLabel = "我的学习宫殿";
+        let masterNodeLabel = "学习总纲";
 
         const canvas = document.getElementById('mind-map-canvas');
         const ctx = canvas.getContext('2d');
         const mapContainer = document.getElementById('map-container');
-        let camera = { x: 0, y: 0, zoom: 0.8 };
+        let camera = { x: 0, y: 0, zoom: 0.85 };
         let isDragging = false;
         let lastMousePos = { x: 0, y: 0 };
 
-        // --- Safe DOM Access Helper ---
         function safeCall(id, action) {
             const el = document.getElementById(id);
             if (el) action(el);
         }
 
-        // --- Theme Engine ---
         function applyTheme() {
             if (isDarkMode) {
                 document.body.classList.remove('light-mode');
@@ -345,17 +342,22 @@
             const genBtn = document.getElementById('generate-btn');
             if (genBtn) genBtn.disabled = true;
 
-            const systemPrompt = `你是一个终身学习规划专家。
+            const systemPrompt = `你是一个终身学习专家。
             用户想学习主题: "${topic}"。
             任务：
-            1. 规划学习该主题的 Roadmap（路径图）。包含 4-6 个阶段（如：预备知识、核心概念、进阶挑战等）。
-            2. 每个阶段需要一个简洁的标签（如：阶段1：基础理论）。
-            3. 针对该主题生成 8-10 张关键记忆卡片（术语与详解）。
+            1. 规划多层级 Roadmap（路径图）。包含 3-5 个主阶段（main stages），每个主阶段下包含 2-4 个具体的子步骤（substeps）。
+            2. 每个主阶段和子步骤都需要简短的标签。
+            3. 针对该主题生成 8 张记忆卡片。
             
-            输出必须为纯 JSON，严禁 Markdown。
+            输出必须为纯 JSON。
             格式：
             {
-              "roadmap": [{"step": "阶段1标签", "description": "简短建议"}],
+              "roadmap": [
+                {
+                  "stage": "主阶段1名称", 
+                  "substeps": ["子步骤1", "子步骤2"]
+                }
+              ],
               "cards": [{"front": "术语", "back": "详解"}]
             }`;
 
@@ -364,13 +366,9 @@
                 const sanitized = response.replace(/```json/g, '').replace(/```/g, '').trim();
                 const data = JSON.parse(sanitized);
                 
-                // 增量更新 Roadmap
                 roadmapData[topic] = data.roadmap;
-                
-                // 更新卡片数据
-                currentBatch = data.cards;
                 allFlashcards = [...allFlashcards, ...data.cards.map(c => ({...c, topic}))];
-                currentIndex = allFlashcards.length - currentBatch.length;
+                currentIndex = allFlashcards.length - data.cards.length;
                 
                 updateDisplay();
                 renderCardList();
@@ -389,7 +387,7 @@
                 safeCall('topic-input', el => el.value = "");
             } catch (err) {
                 console.error(err);
-                showError("规划失败：请检查网络或 API Key");
+                showError("拆解失败：请检查网络或 API Key");
             } finally {
                 safeCall('loader', el => el.classList.add('hidden'));
                 if (genBtn) genBtn.disabled = false;
@@ -404,12 +402,11 @@
                 generationConfig: { responseMimeType: "application/json" }
             };
             const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error('API Error');
             const result = await res.json();
             return result.candidates?.[0]?.content?.parts?.[0]?.text || "";
         }
 
-        // --- Canvas Roadmap Engine ---
+        // --- Canvas Multilevel Engine ---
 
         function initCanvas() {
             if (!mapContainer || !canvas) return;
@@ -417,11 +414,10 @@
             canvas.height = mapContainer.clientHeight;
         }
 
-        function drawArrowLine(x1, y1, x2, y2, color, isMain = false) {
-            const headLength = isMain ? 15 : 10;
+        function drawArrowLine(x1, y1, x2, y2, color, thickness = 1.5, headSize = 10) {
             const angle = Math.atan2(y2 - y1, x2 - x1);
-            const offset = isMain ? 35 : 25;
-            
+            // 增加偏移防止线头进入方框
+            const offset = headSize * 2.5;
             const endX = x2 - Math.cos(angle) * offset;
             const endY = y2 - Math.sin(angle) * offset;
 
@@ -429,17 +425,16 @@
             ctx.moveTo(x1, y1);
             ctx.lineTo(endX, endY);
             ctx.strokeStyle = color;
-            ctx.lineWidth = isMain ? 3 : 1.5;
+            ctx.lineWidth = thickness;
             ctx.stroke();
 
-            // 绘制实心箭头
             ctx.save();
             ctx.translate(endX, endY);
             ctx.rotate(angle);
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(-headLength, -headLength / 1.5);
-            ctx.lineTo(-headLength, headLength / 1.5);
+            ctx.lineTo(-headSize, -headSize / 1.5);
+            ctx.lineTo(-headSize, headSize / 1.5);
             ctx.closePath();
             ctx.fillStyle = color;
             ctx.fill();
@@ -457,56 +452,59 @@
             const topicAngleStep = (Math.PI * 2) / Math.max(1, topicKeys.length);
 
             const primaryColor = isDarkMode ? "#fbbf24" : "#0f172a";
-            const secondaryColor = isDarkMode ? "rgba(251, 191, 36, 0.4)" : "rgba(0, 0, 0, 0.2)";
+            const secondaryColor = isDarkMode ? "rgba(251, 191, 36, 0.5)" : "rgba(0, 0, 0, 0.3)";
+            const tertiaryColor = isDarkMode ? "rgba(255, 255, 255, 0.15)" : "rgba(0, 0, 0, 0.1)";
 
-            // 1. 绘制连线与箭头 (全层级)
+            // 1. 递归绘制连线 (先画底层线)
             topicKeys.forEach((topic, i) => {
                 const topicAngle = i * topicAngleStep;
-                const topicDist = 240;
-                const tx = Math.cos(topicAngle) * topicDist;
-                const ty = Math.sin(topicAngle) * topicDist;
+                const tx = Math.cos(topicAngle) * 250;
+                const ty = Math.sin(topicAngle) * 250;
+                drawArrowLine(0, 0, tx, ty, primaryColor, 3, 15);
 
-                // 中心 -> 主题
-                drawArrowLine(0, 0, tx, ty, primaryColor, true);
+                const stages = roadmapData[topic];
+                stages.forEach((stageObj, j) => {
+                    const stageArc = 0.8;
+                    const stageAngle = topicAngle - (stageArc / 2) + (stages.length > 1 ? (stageArc * j / (stages.length - 1)) : 0);
+                    const sx = Math.cos(stageAngle) * 480;
+                    const sy = Math.sin(stageAngle) * 480;
+                    drawArrowLine(tx, ty, sx, sy, secondaryColor, 2, 10);
 
-                const steps = roadmapData[topic];
-                steps.forEach((s, j) => {
-                    const arcWidth = 0.8;
-                    const stepAngle = topicAngle - (arcWidth/2) + (steps.length > 1 ? (arcWidth * j / (steps.length - 1)) : 0);
-                    const stepDist = 450;
-                    const sx = Math.cos(stepAngle) * stepDist;
-                    const sy = Math.sin(stepAngle) * stepDist;
-
-                    // 主题 -> 学习步骤
-                    drawArrowLine(tx, ty, sx, sy, secondaryColor, false);
+                    const subs = stageObj.substeps || [];
+                    subs.forEach((sub, k) => {
+                        const subArc = 0.4;
+                        const subAngle = stageAngle - (subArc / 2) + (subs.length > 1 ? (subArc * k / (subs.length - 1)) : 0);
+                        const ssx = Math.cos(subAngle) * 650;
+                        const ssy = Math.sin(subAngle) * 650;
+                        drawArrowLine(sx, sy, ssx, ssy, tertiaryColor, 1.2, 8);
+                    });
                 });
             });
 
-            // 2. 绘制节点
+            // 2. 绘制节点方块 (覆盖在线上)
             drawStyledNode(masterNodeLabel.toUpperCase(), 0, 0, { bg: primaryColor, text: isDarkMode ? "#000" : "#fff", bold: true, padding: 24, radius: 15 });
 
             topicKeys.forEach((topic, i) => {
                 const topicAngle = i * topicAngleStep;
-                const topicDist = 240;
-                const tx = Math.cos(topicAngle) * topicDist;
-                const ty = Math.sin(topicAngle) * topicDist;
-
+                const tx = Math.cos(topicAngle) * 250;
+                const ty = Math.sin(topicAngle) * 250;
                 drawStyledNode(topic, tx, ty, { bg: isDarkMode ? "#fff" : "#1e293b", text: isDarkMode ? "#000" : "#fff", radius: 12, padding: 18 });
 
-                const steps = roadmapData[topic];
-                steps.forEach((s, j) => {
-                    const arcWidth = 0.8;
-                    const stepAngle = topicAngle - (arcWidth/2) + (steps.length > 1 ? (arcWidth * j / (steps.length - 1)) : 0);
-                    const stepDist = 450;
-                    const sx = Math.cos(stepAngle) * stepDist;
-                    const sy = Math.sin(stepAngle) * stepDist;
+                const stages = roadmapData[topic];
+                stages.forEach((stageObj, j) => {
+                    const stageArc = 0.8;
+                    const stageAngle = topicAngle - (stageArc / 2) + (stages.length > 1 ? (stageArc * j / (stages.length - 1)) : 0);
+                    const sx = Math.cos(stageAngle) * 480;
+                    const sy = Math.sin(stageAngle) * 480;
+                    drawStyledNode(stageObj.stage, sx, sy, { bg: isDarkMode ? "rgba(251, 191, 36, 0.15)" : "#e2e8f0", text: isDarkMode ? "#fbbf24" : "#1e293b", border: primaryColor, fontSize: 12 });
 
-                    drawStyledNode(s.step, sx, sy, {
-                        bg: isDarkMode ? "#050505" : "#fff", 
-                        text: isDarkMode ? "#fff" : "#1e293b", 
-                        border: isDarkMode ? "#fbbf24" : "#e2e8f0", 
-                        fontSize: 10,
-                        radius: 8
+                    const subs = stageObj.substeps || [];
+                    subs.forEach((sub, k) => {
+                        const subArc = 0.4;
+                        const subAngle = stageAngle - (subArc / 2) + (subs.length > 1 ? (subArc * k / (subs.length - 1)) : 0);
+                        const ssx = Math.cos(subAngle) * 650;
+                        const ssy = Math.sin(subAngle) * 650;
+                        drawStyledNode(sub, ssx, ssy, { bg: isDarkMode ? "#050505" : "#f8fafc", text: isDarkMode ? "#888" : "#64748b", border: tertiaryColor, fontSize: 9, padding: 10 });
                     });
                 });
             });
@@ -538,7 +536,7 @@
             ctx.fillText(text, x, y + 2);
         }
 
-        // --- Canvas Interactions ---
+        // --- Interaction ---
         mapContainer?.addEventListener('mousedown', e => { isDragging = true; lastMousePos = { x: e.clientX, y: e.clientY }; });
         window.addEventListener('mousemove', e => {
             if (!isDragging) return;
@@ -555,7 +553,6 @@
         function resetCanvasView() { camera = { x: 0, y: 0, zoom: 0.85 }; drawMap(); }
 
         // --- UI Updates ---
-
         function updateDisplay() {
             if (allFlashcards.length === 0) return;
             const current = allFlashcards[currentIndex];
@@ -563,7 +560,6 @@
             safeCall('back-text', el => el.innerText = isReverseMode ? current.front : current.back);
             safeCall('card-index-display', el => el.innerText = currentIndex + 1);
             safeCall('card-total-display', el => el.innerText = allFlashcards.length);
-            
             safeCall('main-card', el => el.parentElement?.classList.remove('card-flipped'));
         }
 
@@ -600,9 +596,8 @@
         });
 
         document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
-            if (confirm("确定要重置所有本地规划的路径吗？")) {
-                roadmapData = {};
-                allFlashcards = [];
+            if (confirm("确定要清空所有的学习策略吗？")) {
+                roadmapData = {}; allFlashcards = [];
                 safeCall('study-section', el => el.classList.add('hidden'));
                 safeCall('memory-stats', el => el.classList.add('hidden'));
             }
